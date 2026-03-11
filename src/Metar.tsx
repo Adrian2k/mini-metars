@@ -41,6 +41,8 @@ export const Metar: Component<MetarProps> = (props) => {
     inHg: 0.0,
     hpa: 0.0,
   });
+  const [altimeterUpdated, setAltimeterUpdated] = createSignal(false);
+  const [altimeterUpdateTimer, setAltimeterUpdateTimer] = createSignal<number | undefined>(undefined);
   const altimeterString = createMemo(() => {
     if (props.mainUi.units === "inHg") {
       return altimeter.inHg == 0 ? "" : altimeter.inHg.toFixed(2);
@@ -82,10 +84,26 @@ export const Metar: Component<MetarProps> = (props) => {
       let newTimestamp = new Date(res.metar.obsTime);
       if (currentTimestamp() === undefined || newTimestamp > currentTimestamp()!) {
         await trace(`Frontend: New METAR found for ${icaoId()}`);
+        // Check if altimeter value changed
+        const prevAltim = altimeter.inHg;
+        const isFirstFetch = currentTimestamp() === undefined;
         setCurrentTimestamp(newTimestamp);
         setAltimeter(res.altimeter);
         setWind(res.windString);
-        setRawMetar(res.metar.rawOb);
+        // Strip leading "METAR" or "SPECI" prefix from raw text
+        setRawMetar(res.metar.rawOb.replace(/^(METAR|SPECI)\s+/, ""));
+
+        // Highlight altimeter in orange/yellow for 10 minutes if value changed (not on first fetch)
+        if (!isFirstFetch && prevAltim !== 0 && prevAltim !== res.altimeter.inHg) {
+          setAltimeterUpdated(true);
+          if (altimeterUpdateTimer() !== undefined) {
+            clearTimeout(altimeterUpdateTimer());
+          }
+          setAltimeterUpdateTimer(setTimeout(() => {
+            setAltimeterUpdated(false);
+            setAltimeterUpdateTimer(undefined);
+          }, 10 * 60 * 1000) as unknown as number);
+        }
       } else {
         await trace(`Frontend: Fetched METAR for ${icaoId()} same as displayed`);
       }
@@ -134,6 +152,10 @@ export const Metar: Component<MetarProps> = (props) => {
 
     if (letterTimerHandle() !== undefined) {
       clearInterval(letterTimerHandle());
+    }
+
+    if (altimeterUpdateTimer() !== undefined) {
+      clearTimeout(altimeterUpdateTimer());
     }
   });
 
