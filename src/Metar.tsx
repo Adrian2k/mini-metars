@@ -235,12 +235,13 @@ export const Metar: Component<MetarProps> = (props) => {
               "text-center": true,
               "w-12": props.mainUi.units === "inHg",
               "w-10": props.mainUi.units === "hPa",
+              "text-amber-400": altimeterUpdated(),
             })}
             onClick={toggleShowMetar}
           >
             {altimeterString()}
           </div>
-          <div class="flex-grow" onClick={toggleShowMetar}>
+          <div class={clsx("flex-grow", windColorClass())} onClick={toggleShowMetar}>
             {wind()}
           </div>
         </div>
