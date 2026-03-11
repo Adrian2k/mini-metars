@@ -7,6 +7,8 @@ window.
 Built with Tauri, with a Rust backend for METAR/ATIS fetching and profile/settings management, and a SolidJS frontend
 for UI actions.
 
+METAR data is sourced from the [Aviation Weather Center API](https://aviationweather.gov/help/data/#metar).
+
 ![image](https://github.com/user-attachments/assets/989b103b-64f5-4d43-89ef-c9c60962ddd0)
 
 ## Features
@@ -23,6 +25,14 @@ display more or less information.
 Clicking on an ATIS letter will toggle visibility of the full VATSIM ATIS text, and clicking on either the altimeter
 setting or the wind
 will toggle visibility of the full METAR text (note: only one of the ATIS and METAR full text will be visible at once).
+
+### Visual indicators
+
+* **Altimeter change highlight**: When the altimeter value changes between METAR updates, it is displayed in
+  amber/orange for 10 minutes to draw attention to the new value.
+* **Stale METAR warning**: Wind data is color-coded based on METAR age:
+  * **Yellow** — METAR is older than 1.5 hours
+  * **Red** — METAR is older than 2.5 hours
 
 ### Visibility and display controls
 
