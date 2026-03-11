@@ -190,6 +190,23 @@ export const Metar: Component<MetarProps> = (props) => {
     });
   };
 
+  // Re-evaluate wind color every 30 seconds
+  const [windColorTick, setWindColorTick] = createSignal(0);
+  const windColorTickHandle = setInterval(() => setWindColorTick((v) => v + 1), 30000);
+  onCleanup(() => clearInterval(windColorTickHandle));
+
+  // Compute wind color based on METAR age
+  const windColorClass = createMemo(() => {
+    windColorTick(); // subscribe to tick for periodic re-evaluation
+    const ts = currentTimestamp();
+    if (!ts) return "";
+    const ageMs = Date.now() - ts.getTime();
+    const ageHours = ageMs / (1000 * 60 * 60);
+    if (ageHours > 2.5) return "text-red-500";
+    if (ageHours > 1.5) return "text-yellow-400";
+    return "";
+  });
+
   let fullTextClass = createMemo(() => {
     return clsx({
       "text-xs mb-1 text-gray-400 pr-1": true,
