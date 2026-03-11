@@ -30,6 +30,9 @@ log = "0.4.22"
 octocrab = "0.39.0"
 semver = "1.0.23"
 
+[dev-dependencies]
+tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread"] }
+
 # Optimize for smaller binary size
 [profile.release]
 panic = "abort"   # Strip expensive panic clean-up logic

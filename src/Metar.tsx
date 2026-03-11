@@ -62,7 +62,7 @@ export const Metar: Component<MetarProps> = (props) => {
       await debug(`Frontend: Looking up requested ID: ${props.requestedId}`);
       let station = await lookupStationCmd(props.requestedId);
       setIcaoId(station.icaoId);
-      setDisplayId(station.faaId !== "-" ? station.faaId : station.icaoId);
+      setDisplayId(station.faaId && station.faaId !== "-" ? station.faaId : station.icaoId);
       setValidId(true);
     } catch (error) {
       setDisplayId(props.requestedId);

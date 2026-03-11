@@ -45,16 +45,16 @@ interface MetarDto {
 
 interface Station {
   icaoId: string;
-  iataId: string;
-  faaId: string;
-  wmoId: string;
+  iataId?: string;
+  faaId?: string;
+  wmoId?: string;
   lat: number;
   lon: number;
-  elev: number;
-  site: string;
+  elev?: number;
+  site?: string;
   state: string;
-  country: string;
-  priority: number;
+  country?: string;
+  priority?: number;
 }
 
 interface FetchMetarResponse {

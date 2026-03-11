@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use flate2::read::GzDecoder;
 use log::debug;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
@@ -33,7 +33,7 @@ impl AviationWeatherCenterApi {
     }
 
     fn metars_json_url(airports_string: &str) -> String {
-        format!("{BASE_URL}/api/data/metar/?ids={airports_string}&format=json")
+        format!("{BASE_URL}api/data/metar?ids={airports_string}&format=json")
     }
 
     pub async fn fetch_metar(&self, station_id: &str) -> Result<MetarDto, anyhow::Error> {
@@ -82,7 +82,11 @@ impl AviationWeatherCenterApi {
         self.faa_icao_lookup = Some(
             stations
                 .values()
-                .map(|s| (s.faa_id.to_uppercase(), s.icao_id.to_uppercase()))
+                .filter_map(|s| {
+                    s.faa_id
+                        .as_ref()
+                        .map(|faa| (faa.to_uppercase(), s.icao_id.to_uppercase()))
+                })
                 .collect(),
         );
         Ok(stations)
@@ -91,7 +95,7 @@ impl AviationWeatherCenterApi {
     pub async fn fetch_stations(&self) -> Result<Vec<Station>, anyhow::Error> {
         let gzipped = self
             .client
-            .get(format!("{BASE_URL}/data/cache/stations.cache.json.gz"))
+            .get(format!("{BASE_URL}data/cache/stations.cache.json.gz"))
             .send()
             .await?
             .bytes()
@@ -104,7 +108,8 @@ impl AviationWeatherCenterApi {
         let mut s = String::new();
         d.read_to_string(&mut s)?;
 
-        Ok(serde_json::from_str(&s)?)
+        let all: Vec<Station> = serde_json::from_str(&s)?;
+        Ok(all.into_iter().filter(|s| !s.icao_id.is_empty()).collect())
     }
 
     pub async fn fetch_stations_hashmap(&self) -> Result<HashMap<String, Station>, anyhow::Error> {
@@ -161,38 +166,38 @@ impl AviationWeatherCenterApi {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Station {
+    #[serde(deserialize_with = "deserialize_null_string", default)]
     pub icao_id: String,
-    pub iata_id: String,
-    pub faa_id: String,
-    pub wmo_id: String,
+    pub iata_id: Option<String>,
+    pub faa_id: Option<String>,
+    pub wmo_id: Option<String>,
     pub lat: f64,
     pub lon: f64,
-    pub elev: i32,
-    pub site: String,
+    pub elev: Option<i32>,
+    pub site: Option<String>,
     pub state: String,
-    pub country: String,
-    pub priority: i32,
+    pub country: Option<String>,
+    pub priority: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MetarDto {
-    #[serde(rename = "metar_id")]
-    pub metar_id: i64,
+    #[serde(rename = "icaoId")]
     pub icao_id: String,
-    pub receipt_time: String,
+    pub receipt_time: Option<String>,
     #[serde(deserialize_with = "ts_seconds::deserialize")]
     pub obs_time: DateTime<Utc>,
-    pub report_time: String,
+    pub report_time: Option<String>,
     pub temp: Option<f64>,
     pub dewp: Option<f64>,
     pub wdir: Option<StringOrI32>,
     pub wspd: Option<i32>,
     pub wgst: Option<i32>,
-    pub visib: StringOrF64,
+    pub visib: Option<StringOrF64>,
     pub altim: f64,
     pub slp: Option<f64>,
-    pub qc_field: i32,
+    pub qc_field: Option<i32>,
     pub wx_string: Option<String>,
     pub pres_tend: Option<f64>,
     pub max_t: Option<f64>,
@@ -207,11 +212,11 @@ pub struct MetarDto {
     pub vert_vis: Option<i32>,
     pub metar_type: String,
     pub raw_ob: String,
-    pub most_recent: i32,
+    pub most_recent: Option<i32>,
     pub lat: f64,
     pub lon: f64,
     pub elev: i32,
-    pub prior: i32,
+    pub prior: Option<i32>,
     pub name: String,
     pub clouds: Vec<Cloud>,
 }
@@ -268,6 +273,14 @@ pub enum StringOrF64 {
     F64(f64),
 }
 
+fn deserialize_null_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
+}
+
 impl fmt::Display for StringOrI32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
@@ -283,5 +296,93 @@ impl fmt::Display for StringOrF64 {
             Self::String(s) => write!(f, "{s}"),
             Self::F64(i) => write!(f, "{i}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_metar_dto_deserialization() {
+        let json = r#"[{"icaoId":"ENGM","receiptTime":"2026-03-11T15:26:07.891Z","obsTime":1773242400,"reportTime":"2026-03-11T15:20:00.000Z","temp":3,"dewp":2,"wdir":180,"wspd":8,"visib":4.97,"altim":998,"qcField":0,"wxString":"-RA","metarType":"METAR","rawOb":"METAR ENGM 111520Z 18008KT 8000 -RA OVC002 03/02 Q0998 TEMPO 2000 BR","lat":60.201,"lon":11.08,"elev":204,"name":"Oslo/Gardermoen Arpt, AK, NO","cover":"OVC","clouds":[{"cover":"OVC","base":200}],"fltCat":"LIFR"}]"#;
+        let result: Result<Vec<MetarDto>, _> = serde_json::from_str(json);
+        match &result {
+            Ok(metars) => println!("SUCCESS: parsed {} metar(s), altim={}", metars.len(), metars[0].altim),
+            Err(e) => println!("FAILED: {e}"),
+        }
+        assert!(result.is_ok(), "Deserialization failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_station_deserialization_with_null_fields() {
+        // Non-US station has null faaId, iataId, wmoId; some stations have null country/elev/priority
+        let json = r#"[{"id":"ENGM","icaoId":"ENGM","iataId":"OSL","faaId":null,"wmoId":"01384","site":"Oslo/Gardermoen Arpt","lat":60.201,"lon":11.08,"elev":204,"state":"AK","country":"NO","priority":1,"siteType":["METAR","TAF"]},{"id":"TEST","icaoId":"TEST","iataId":null,"faaId":null,"wmoId":null,"site":"Test Station","lat":0.0,"lon":0.0,"elev":null,"state":"","country":null,"priority":null,"siteType":["METAR"]},{"id":"41001","icaoId":null,"iataId":null,"faaId":null,"wmoId":null,"site":"Cape Hatteras","lat":34.561,"lon":-72.631,"elev":0,"state":"","country":null,"priority":1,"siteType":[]}]"#;
+        let result: Result<Vec<Station>, _> = serde_json::from_str(json);
+        match &result {
+            Ok(stations) => println!("SUCCESS: parsed {} station(s), icaoId={}", stations.len(), stations[0].icao_id),
+            Err(e) => println!("FAILED: {e}"),
+        }
+        assert!(result.is_ok(), "Station deserialization failed: {:?}", result.err());
+        let stations = result.unwrap();
+        // 3 stations deserialized, including one with null icaoId
+        assert_eq!(stations.len(), 3);
+        assert_eq!(stations[0].faa_id, None);
+        assert_eq!(stations[0].iata_id, Some("OSL".to_string()));
+        // Second station has null country, elev, priority
+        assert_eq!(stations[1].country, None);
+        assert_eq!(stations[1].elev, None);
+        assert_eq!(stations[1].priority, None);
+        // Third station has null icaoId, deserialized as empty string
+        assert_eq!(stations[2].icao_id, "");
+    }
+
+    #[tokio::test]
+    async fn test_fetch_real_station_cache() {
+        let client = reqwest::Client::builder().build().unwrap();
+        let gzipped = client
+            .get("https://aviationweather.gov/data/cache/stations.cache.json.gz")
+            .send()
+            .await
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
+
+        let read = &gzipped.into_iter().collect::<Vec<_>>()[..];
+        let mut d = flate2::read::GzDecoder::new(read);
+        let mut s = String::new();
+        d.read_to_string(&mut s).unwrap();
+
+        let result: Result<Vec<Station>, _> = serde_json::from_str(&s);
+        match &result {
+            Ok(stations) => {
+                let with_icao = stations.iter().filter(|s| !s.icao_id.is_empty()).count();
+                println!("SUCCESS: parsed {} total stations, {} with icaoId", stations.len(), with_icao);
+            }
+            Err(e) => println!("FAILED at: {e}"),
+        }
+        assert!(result.is_ok(), "Real station cache deserialization failed: {:?}", result.err());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_real_metar() {
+        let client = reqwest::Client::builder().build().unwrap();
+        let body = client
+            .get("https://aviationweather.gov/api/data/metar?ids=ENGM&format=json")
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        println!("Raw METAR response: {}", &body[..body.len().min(500)]);
+        let result: Result<Vec<MetarDto>, _> = serde_json::from_str(&body);
+        match &result {
+            Ok(metars) => println!("SUCCESS: parsed {} metar(s)", metars.len()),
+            Err(e) => println!("FAILED at: {e}"),
+        }
+        assert!(result.is_ok(), "Real METAR deserialization failed: {:?}", result.err());
     }
 }
