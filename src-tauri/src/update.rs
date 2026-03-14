@@ -12,7 +12,7 @@ pub async fn check_for_updates(app: &AppHandle) -> Result<(), anyhow::Error> {
 
     let octocrab = octocrab::instance();
     if let Ok(release) = octocrab
-        .repos("kengreim", "mini-metars")
+        .repos("Adrian2k", "mini-metars")
         .releases()
         .get_latest()
         .await
