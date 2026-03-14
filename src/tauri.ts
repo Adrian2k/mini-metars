@@ -104,6 +104,10 @@ interface Settings {
   mostRecentProfile?: string;
   alwaysOnTop: boolean;
   autoResize: boolean;
+  qnhHighlightDuration: number;
+  showQnhTrendArrow: boolean;
+  metarYellowMinutes: number;
+  metarRedMinutes: number;
 }
 
 interface InitialSettingsLoad {

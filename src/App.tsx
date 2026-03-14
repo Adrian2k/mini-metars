@@ -1,10 +1,11 @@
 import "./styles.css";
 import { Metar } from "./Metar.tsx";
+import { SettingsPanel } from "./SettingsPanel.tsx";
 import { batch, createMemo, createSignal, For, onMount, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 // @ts-ignore
 import { autofocus } from "@solid-primitives/autofocus";
-import { getCurrentWindow, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
+import { cursorPosition, getCurrentWindow, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
 import { logIfDev } from "./logging.ts";
 import { clsx } from "clsx";
 import { createShortcut, KbdKey } from "@solid-primitives/keyboard";
@@ -56,30 +57,30 @@ function App() {
   document.addEventListener("contextmenu", (event) => event.preventDefault());
 
   let isDragging = false;
-  let dragStartScreenX = 0;
-  let dragStartScreenY = 0;
-  let dragStartWinX = 0;
-  let dragStartWinY = 0;
-  let dragScaleFactor = 1;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  async function dragLoop() {
+    while (isDragging) {
+      try {
+        const cursor = await cursorPosition();
+        await window.setPosition(new PhysicalPosition(
+          cursor.x - dragOffsetX,
+          cursor.y - dragOffsetY
+        ));
+      } catch (_) { /* ignore errors during drag */ }
+      await new Promise((r) => setTimeout(r, 16));
+    }
+  }
 
   document.addEventListener("mousedown", (event) => {
     if (event.button === 2) {
-      dragStartScreenX = event.screenX;
-      dragStartScreenY = event.screenY;
-      Promise.all([window.outerPosition(), window.scaleFactor()]).then(([pos, sf]) => {
-        dragStartWinX = pos.x;
-        dragStartWinY = pos.y;
-        dragScaleFactor = sf;
+      Promise.all([window.outerPosition(), cursorPosition()]).then(([winPos, curPos]) => {
+        dragOffsetX = curPos.x - winPos.x;
+        dragOffsetY = curPos.y - winPos.y;
         isDragging = true;
+        dragLoop();
       });
-    }
-  });
-
-  document.addEventListener("mousemove", (event) => {
-    if (isDragging) {
-      const dx = (event.screenX - dragStartScreenX) * dragScaleFactor;
-      const dy = (event.screenY - dragStartScreenY) * dragScaleFactor;
-      window.setPosition(new PhysicalPosition(dragStartWinX + dx, dragStartWinY + dy));
     }
   });
 
@@ -117,7 +118,14 @@ function App() {
     loadMostRecentProfileOnOpen: true,
     alwaysOnTop: true,
     autoResize: true,
+    qnhHighlightDuration: 10,
+    showQnhTrendArrow: true,
+    metarYellowMinutes: 90,
+    metarRedMinutes: 150,
   });
+
+  // Settings panel visibility
+  const [showSettings, setShowSettings] = createSignal(false);
 
   let CtrlOrCmd: KbdKey = type() === "macos" || type() === "ios" ? "Meta" : "Control";
 
@@ -359,6 +367,14 @@ function App() {
     { preventDefault: true, requireReset: false }
   );
 
+  // Create shortcut for settings panel
+  createShortcut(
+    [CtrlOrCmd, ","],
+    async () =>
+      await applyFnAndResize(() => setShowSettings((prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
   async function resetWindowHeight() {
     if (containerRef !== undefined) {
       let currentSize = await window.innerSize();
@@ -457,6 +473,7 @@ function App() {
                     requestedId={id}
                     resizeAfterFn={applyFnAndResize}
                     mainUi={mainUi}
+                    settings={settings}
                     deleteOnClick={async () => await removeStation(i())}
                   />
                 </div>
@@ -479,6 +496,18 @@ function App() {
               </form>
             </Show>
           </div>
+          <Show when={showSettings()}>
+            <SettingsPanel
+              settings={settings}
+              setSettings={setSettings}
+              mainUi={mainUi}
+              setMainUi={setMainUi}
+              onClose={async () => {
+                await applyFnAndResize(() => setShowSettings(false));
+                await saveSettingsCmd(settings);
+              }}
+            />
+          </Show>
         </div>
       </div>
     </div>

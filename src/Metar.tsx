@@ -8,7 +8,7 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { CloudLayer, lookupStationCmd, MetarDto, updateAtisCmd, updateMetarCmd } from "./tauri.ts";
+import { CloudLayer, lookupStationCmd, MetarDto, Settings, updateAtisCmd, updateMetarCmd } from "./tauri.ts";
 import { createStore } from "solid-js/store";
 import { MainUiStore } from "./App.tsx";
 import { clsx } from "clsx";
@@ -18,6 +18,7 @@ import { DeleteButton } from "./DeleteButton.tsx";
 interface MetarProps {
   requestedId: string;
   mainUi: MainUiStore;
+  settings: Settings;
   resizeAfterFn: (fn: () => void) => void;
   deleteOnClick: () => void;
 }
@@ -96,18 +97,19 @@ export const Metar: Component<MetarProps> = (props) => {
         setRawMetar(res.metar.rawOb.replace(/^(METAR|SPECI)\s+/, ""));
         setMetarData(res.metar);
 
-        // Highlight altimeter in orange/yellow for 10 minutes if value changed (not on first fetch)
+        // Highlight altimeter in orange/yellow if value changed (not on first fetch)
         if (!isFirstFetch && prevAltim !== 0 && prevAltim !== res.altimeter.inHg) {
           setAltimeterUpdated(true);
           setAltimeterTrend(res.altimeter.inHg > prevAltim ? "up" : "down");
           if (altimeterUpdateTimer() !== undefined) {
             clearTimeout(altimeterUpdateTimer());
           }
+          const durationMs = (props.settings.qnhHighlightDuration ?? 10) * 60 * 1000;
           setAltimeterUpdateTimer(setTimeout(() => {
             setAltimeterUpdated(false);
             setAltimeterTrend(null);
             setAltimeterUpdateTimer(undefined);
-          }, 10 * 60 * 1000) as unknown as number);
+          }, durationMs) as unknown as number);
         }
       } else {
         await trace(`Frontend: Fetched METAR for ${icaoId()} same as displayed`);
@@ -206,9 +208,11 @@ export const Metar: Component<MetarProps> = (props) => {
     const ts = currentTimestamp();
     if (!ts) return "";
     const ageMs = Date.now() - ts.getTime();
-    const ageHours = ageMs / (1000 * 60 * 60);
-    if (ageHours > 2.5) return "text-red-500";
-    if (ageHours > 1.5) return "text-yellow-400";
+    const ageMin = ageMs / (1000 * 60);
+    const redMin = props.settings.metarRedMinutes ?? 150;
+    const yellowMin = props.settings.metarYellowMinutes ?? 90;
+    if (ageMin > redMin) return "text-red-500";
+    if (ageMin > yellowMin) return "text-yellow-400";
     return "";
   });
 
@@ -389,7 +393,7 @@ export const Metar: Component<MetarProps> = (props) => {
             onClick={toggleShowMetar}
           >
             {altimeterString()}
-            <Show when={altimeterTrend() !== null}>
+            <Show when={altimeterTrend() !== null && (props.settings.showQnhTrendArrow ?? true)}>
               <span class="text-amber-400 text-xs ml-0.5">{altimeterTrend() === "up" ? "↑" : "↓"}</span>
             </Show>
           </div>

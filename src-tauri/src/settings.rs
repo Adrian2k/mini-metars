@@ -13,6 +13,18 @@ const fn true_bool() -> bool {
     true
 }
 
+const fn default_qnh_highlight_duration() -> u32 {
+    10
+}
+
+const fn default_metar_yellow_minutes() -> u32 {
+    90
+}
+
+const fn default_metar_red_minutes() -> u32 {
+    150
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -23,6 +35,14 @@ pub struct Settings {
     always_on_top: bool,
     #[serde(default = "true_bool")]
     auto_resize: bool,
+    #[serde(default = "default_qnh_highlight_duration")]
+    pub qnh_highlight_duration: u32,
+    #[serde(default = "true_bool")]
+    pub show_qnh_trend_arrow: bool,
+    #[serde(default = "default_metar_yellow_minutes")]
+    pub metar_yellow_minutes: u32,
+    #[serde(default = "default_metar_red_minutes")]
+    pub metar_red_minutes: u32,
 }
 
 impl Settings {
@@ -32,6 +52,10 @@ impl Settings {
             most_recent_profile: None,
             always_on_top: true,
             auto_resize: true,
+            qnh_highlight_duration: 10,
+            show_qnh_trend_arrow: true,
+            metar_yellow_minutes: 90,
+            metar_red_minutes: 150,
         }
     }
 
