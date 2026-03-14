@@ -6,6 +6,10 @@ on:
     tags:
       - 'release-*'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish-tauri:
     permissions:
@@ -28,12 +32,12 @@ jobs:
       - name: setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
       - name: setup node
         uses: actions/setup-node@v5
         with:
-          node-version: 'latest'
+          node-version: '22'
           cache: 'pnpm' # Set this to npm, yarn or pnpm.
 
       - name: install Rust stable
