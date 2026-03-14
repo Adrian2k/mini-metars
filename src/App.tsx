@@ -353,6 +353,8 @@ function App() {
       height: 520,
       resizable: true,
       center: true,
+      decorations: true,
+      closable: true,
     });
 
     settingsWindow.once("tauri://error", () => {
