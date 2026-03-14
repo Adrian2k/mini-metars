@@ -4,6 +4,8 @@ Mini METARs is a micro-utility to display up-to-date METAR information (primaril
 with full METAR toggle-able) and VATSIM ATIS code for a number of user-inputted airports/stations in a minimal on-top
 window.
 
+Originally created by [kengreim](https://github.com/kengreim/mini-metars).
+
 Built with Tauri, with a Rust backend for METAR/ATIS fetching and profile/settings management, and a SolidJS frontend
 for UI actions.
 
@@ -64,8 +66,7 @@ after the wind when inline mode is enabled). All of these are **off by default**
 * `Ctrl/Cmd` + `6`: toggle overall cloud cover (e.g. `BKN`, `OVC`, `CAVOK`)
 * `Ctrl/Cmd` + `7`: toggle weather string / wxString (e.g. `-SHRA`, `-DZ RA`)
 * `Ctrl/Cmd` + `8`: cycle flight category display (off → colored dot → colored text → off). Always shown in front
-  of the ICAO identifier and always colored (green = VFR, blue = MVFR, red = IFR, magenta = LIFR). Not affected by
-  the `Ctrl/Cmd` + `E` display mode toggle.
+  of the ICAO identifier and always colored (green = VFR, blue = MVFR, red = IFR, magenta = LIFR). 
 * `Ctrl/Cmd` + `9`: toggle visibility as reported in the METAR text (e.g. `6000`, `0800`). Only displayed when
   visibility is below 9999 / not CAVOK.
 * `Ctrl/Cmd` + `0`: toggle RVR (Runway Visual Range) as reported in the METAR text (e.g. `R28L/0600V1000`)
