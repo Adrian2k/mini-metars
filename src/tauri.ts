@@ -41,6 +41,8 @@ interface MetarDto {
   prior: number;
   name: string;
   clouds: CloudLayer[];
+  cover?: string;
+  fltCat?: string;
 }
 
 interface Station {
@@ -76,6 +78,18 @@ interface Profile {
   window?: Window;
   units: "inHg" | "hPa";
   hideAirportIfMissingAtis: boolean;
+  showFew: boolean;
+  showSct: boolean;
+  showBkn: boolean;
+  showOvc: boolean;
+  showCover: boolean;
+  showWxString: boolean;
+  fltCatMode: "off" | "dot" | "text";
+  showVisibility: boolean;
+  showRvr: boolean;
+  tempDewpoint: "off" | "temp" | "tempDewp";
+  showMetarAge: boolean;
+  extraInfoInline: boolean;
 }
 
 interface Window {

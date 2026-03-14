@@ -219,6 +219,8 @@ pub struct MetarDto {
     pub prior: Option<i32>,
     pub name: String,
     pub clouds: Vec<Cloud>,
+    pub cover: Option<String>,
+    pub flt_cat: Option<String>,
 }
 
 impl MetarDto {

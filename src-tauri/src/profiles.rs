@@ -26,6 +26,30 @@ pub struct Profile {
     pub units: AltimeterUnits,
     #[serde(default = "false_bool")]
     pub hide_airport_if_missing_atis: bool,
+    #[serde(default = "false_bool")]
+    pub show_few: bool,
+    #[serde(default = "false_bool")]
+    pub show_sct: bool,
+    #[serde(default = "false_bool")]
+    pub show_bkn: bool,
+    #[serde(default = "false_bool")]
+    pub show_ovc: bool,
+    #[serde(default = "false_bool")]
+    pub show_cover: bool,
+    #[serde(default = "false_bool")]
+    pub show_wx_string: bool,
+    #[serde(default)]
+    pub flt_cat_mode: FltCatMode,
+    #[serde(default = "false_bool")]
+    pub show_visibility: bool,
+    #[serde(default = "false_bool")]
+    pub show_rvr: bool,
+    #[serde(default)]
+    pub temp_dewpoint: TempDewpointMode,
+    #[serde(default = "false_bool")]
+    pub show_metar_age: bool,
+    #[serde(default = "false_bool")]
+    pub extra_info_inline: bool,
 }
 
 const fn true_bool() -> bool {
@@ -34,6 +58,28 @@ const fn true_bool() -> bool {
 
 const fn false_bool() -> bool {
     false
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum FltCatMode {
+    #[default]
+    #[serde(rename = "off")]
+    Off,
+    #[serde(rename = "dot")]
+    Dot,
+    #[serde(rename = "text")]
+    Text,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum TempDewpointMode {
+    #[default]
+    #[serde(rename = "off")]
+    Off,
+    #[serde(rename = "temp")]
+    Temp,
+    #[serde(rename = "tempDewp")]
+    TempDewp,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
