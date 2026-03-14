@@ -361,8 +361,9 @@ function App() {
       settingsWindow = null;
     });
 
-    settingsWindow.once("tauri://destroyed", () => {
+    settingsWindow.once("tauri://destroyed", async () => {
       settingsWindow = null;
+      await saveSettingsCmd(settings);
     });
   }
 
@@ -400,11 +401,6 @@ function App() {
   listen<{ key: string; value: unknown }>("settings-settings-change", (event) => {
     const { key, value } = event.payload;
     setSettings(key as keyof Settings, value as never);
-  });
-
-  // Listen for settings window closed — save settings
-  listen("settings-closed", async () => {
-    await saveSettingsCmd(settings);
   });
 
   async function resetWindowHeight() {

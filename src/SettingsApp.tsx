@@ -2,8 +2,7 @@ import "./styles.css";
 import { createStore } from "solid-js/store";
 import { onMount } from "solid-js";
 import { emit, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Settings, saveSettingsCmd } from "./tauri.ts";
+import { Settings } from "./tauri.ts";
 import { SettingsMainUiState, DEFAULT_SETTINGS } from "./shared-types.ts";
 
 type MainUiState = SettingsMainUiState;
@@ -100,11 +99,6 @@ function SettingsApp() {
     // Request initial state
     emit("settings-request-init", {});
 
-    // Save settings and notify main window on close
-    getCurrentWindow().onCloseRequested(async () => {
-      await saveSettingsCmd(settings);
-      await emit("settings-closed", {});
-    });
   });
 
   return (
