@@ -4,6 +4,8 @@ Mini METARs is a micro-utility to display up-to-date METAR information (primaril
 with full METAR toggle-able) and VATSIM ATIS code for a number of user-inputted airports/stations in a minimal on-top
 window.
 
+Originally created by [kengreim](https://github.com/kengreim/mini-metars).
+
 Built with Tauri, with a Rust backend for METAR/ATIS fetching and profile/settings management, and a SolidJS frontend
 for UI actions.
 
@@ -45,6 +47,41 @@ You can toggle visibility of the titlebar (Windows-only) and the input box with 
   input box and delete controls are hidden; when those controls are shown, all airports will be shown regardless of this
   setting and the hotkey will have no effect on the setting)
 * `Ctrl/Cmd` + `U` to toggle between inHg and hPa for altimeter units
+
+### Extra METAR data toggles
+
+The following shortcuts toggle additional METAR information displayed below the main line for each station (or inline
+after the wind when inline mode is enabled). All of these are **off by default**.
+
+#### Cloud layers
+
+* `Ctrl/Cmd` + `1`: toggle FEW cloud layer display (e.g. `FEW020`)
+* `Ctrl/Cmd` + `2`: toggle SCT cloud layer display (e.g. `SCT012`)
+* `Ctrl/Cmd` + `3`: toggle BKN cloud layer display (e.g. `BKN016`)
+* `Ctrl/Cmd` + `4`: toggle OVC cloud layer display (e.g. `OVC007`)
+* `Ctrl/Cmd` + `5`: toggle **all** cloud layers at once (turns all on if any are off, turns all off if all are on)
+
+#### Other fields
+
+* `Ctrl/Cmd` + `6`: toggle overall cloud cover (e.g. `BKN`, `OVC`, `CAVOK`)
+* `Ctrl/Cmd` + `7`: toggle weather string / wxString (e.g. `-SHRA`, `-DZ RA`)
+* `Ctrl/Cmd` + `8`: cycle flight category display (off → colored dot → colored text → off). Always shown in front
+  of the ICAO identifier and always colored (green = VFR, blue = MVFR, red = IFR, magenta = LIFR). 
+* `Ctrl/Cmd` + `9`: toggle visibility as reported in the METAR text (e.g. `6000`, `0800`). Only displayed when
+  visibility is below 9999 / not CAVOK.
+* `Ctrl/Cmd` + `0`: toggle RVR (Runway Visual Range) as reported in the METAR text (e.g. `R28L/0600V1000`)
+* `Ctrl/Cmd` + `T`: cycle temperature / dewpoint display (off → temp only → temp/dewpoint → off)
+* `Ctrl/Cmd` + `R`: toggle METAR age display (e.g. `12m`, `1h30m`)
+
+#### Display mode
+
+* `Ctrl/Cmd` + `E`: toggle extra info display mode — switch between a **cyan line below** the main row (default) and
+  **white inline** text appended after the wind data
+
+### QNH trend indicator
+
+When the altimeter/QNH value changes between METAR updates, a **↑** or **↓** arrow is displayed next to the altimeter
+value (in amber) for 10 minutes to indicate whether pressure is rising or falling.
 
 ### Profiles
 
