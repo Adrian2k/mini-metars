@@ -368,7 +368,7 @@ export const Metar: Component<MetarProps> = (props) => {
         <DeleteButton onClick={props.deleteOnClick} />
       </Show>
       <div class="flex flex-col mx-1 select-none cursor-pointer">
-        <div class="flex font-mono text-sm space-x-2.5">
+        <div class="flex font-mono text-sm space-x-2.5 whitespace-nowrap">
           <Show when={props.mainUi.fltCatMode === "dot" && metarData()?.fltCat}>
             <span class={`${fltCatColor()} flex items-center`}>●</span>
           </Show>
@@ -401,7 +401,7 @@ export const Metar: Component<MetarProps> = (props) => {
           </div>
         </div>
         <Show when={hasExtraInfo() && !props.mainUi.extraInfoInline}>
-          <div class="flex flex-wrap gap-x-2 mx-0.5">
+          <div class="flex gap-x-2 mx-0.5 whitespace-nowrap">
             <Show when={props.mainUi.showCover && metarData()?.cover}>
               <span class={extraInfoClass()}>{metarData()!.cover}</span>
             </Show>

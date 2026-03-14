@@ -4,7 +4,7 @@ import { batch, createMemo, createSignal, For, onMount, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 // @ts-ignore
 import { autofocus } from "@solid-primitives/autofocus";
-import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
+import { getCurrentWindow, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
 import { logIfDev } from "./logging.ts";
 import { clsx } from "clsx";
 import { createShortcut, KbdKey } from "@solid-primitives/keyboard";
@@ -52,10 +52,42 @@ function App() {
   let window = getCurrentWindow();
   let useCustomTitlebar = type() === "windows";
 
-  // Prevent right-click in prod
-  if (import.meta.env.PROD) {
-    document.addEventListener("contextmenu", (event) => event.preventDefault());
-  }
+  // Prevent right-click context menu and enable window dragging with right-click
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
+
+  let isDragging = false;
+  let dragStartScreenX = 0;
+  let dragStartScreenY = 0;
+  let dragStartWinX = 0;
+  let dragStartWinY = 0;
+  let dragScaleFactor = 1;
+
+  document.addEventListener("mousedown", (event) => {
+    if (event.button === 2) {
+      dragStartScreenX = event.screenX;
+      dragStartScreenY = event.screenY;
+      Promise.all([window.outerPosition(), window.scaleFactor()]).then(([pos, sf]) => {
+        dragStartWinX = pos.x;
+        dragStartWinY = pos.y;
+        dragScaleFactor = sf;
+        isDragging = true;
+      });
+    }
+  });
+
+  document.addEventListener("mousemove", (event) => {
+    if (isDragging) {
+      const dx = (event.screenX - dragStartScreenX) * dragScaleFactor;
+      const dy = (event.screenY - dragStartScreenY) * dragScaleFactor;
+      window.setPosition(new PhysicalPosition(dragStartWinX + dx, dragStartWinY + dy));
+    }
+  });
+
+  document.addEventListener("mouseup", (event) => {
+    if (event.button === 2) {
+      isDragging = false;
+    }
+  });
 
   // Main signals for IDs and input
   const [inputId, setInputId] = createSignal("");
@@ -332,11 +364,13 @@ function App() {
       let currentSize = await window.innerSize();
       logIfDev("Current window size", currentSize);
       logIfDev("containerRef height", containerRef.offsetHeight);
+      logIfDev("containerRef scrollWidth", containerRef.scrollWidth);
       let scaleFactor = await window.scaleFactor();
       logIfDev("Scale factor", scaleFactor);
       let offset = mainUi.showTitlebar ? (type() === "macos" ? 30 : 24) : 0;
       let container = Math.max(20, containerRef.offsetHeight);
-      await window.setSize(new PhysicalSize(currentSize.width, (container + offset) * scaleFactor));
+      let contentWidth = Math.max(200, Math.ceil(containerRef.scrollWidth * scaleFactor));
+      await window.setSize(new PhysicalSize(contentWidth, (container + offset) * scaleFactor));
     }
   }
 
@@ -408,13 +442,13 @@ function App() {
       </Show>
       <div
         class={clsx({
-          "h-screen overflow-x-hidden": true,
+          "h-screen overflow-x-hidden bg-black": true,
           "pt-[24px]": useCustomTitlebar && mainUi.showTitlebar,
           "overflow-y-auto": mainUi.showScroll,
           "overflow-y-hidden": !mainUi.showScroll,
         })}
       >
-        <div class="flex flex-col bg-black text-white" ref={containerRef}>
+        <div class="flex flex-col bg-black text-white w-fit" ref={containerRef}>
           <div class="flex flex-col grow">
             <For each={ids}>
               {(id, i) => (
