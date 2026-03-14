@@ -32,6 +32,18 @@ export interface MainUiStore {
   showTitlebar: boolean;
   units: "inHg" | "hPa";
   hideAirportIfMissingAtis: boolean;
+  showFew: boolean;
+  showSct: boolean;
+  showBkn: boolean;
+  showOvc: boolean;
+  showCover: boolean;
+  showWxString: boolean;
+  fltCatMode: "off" | "dot" | "text";
+  showVisibility: boolean;
+  showRvr: boolean;
+  tempDewpoint: "off" | "temp" | "tempDewp";
+  showMetarAge: boolean;
+  extraInfoInline: boolean;
 }
 
 function App() {
@@ -54,6 +66,18 @@ function App() {
     showTitlebar: true,
     units: "inHg",
     hideAirportIfMissingAtis: false,
+    showFew: false,
+    showSct: false,
+    showBkn: false,
+    showOvc: false,
+    showCover: false,
+    showWxString: false,
+    fltCatMode: "off",
+    showVisibility: false,
+    showRvr: false,
+    tempDewpoint: "off",
+    showMetarAge: false,
+    extraInfoInline: false,
   });
 
   // Settings store
@@ -73,6 +97,18 @@ function App() {
       showInput: mainUi.showInput,
       units: mainUi.units,
       hideAirportIfMissingAtis: mainUi.hideAirportIfMissingAtis,
+      showFew: mainUi.showFew,
+      showSct: mainUi.showSct,
+      showBkn: mainUi.showBkn,
+      showOvc: mainUi.showOvc,
+      showCover: mainUi.showCover,
+      showWxString: mainUi.showWxString,
+      fltCatMode: mainUi.fltCatMode,
+      showVisibility: mainUi.showVisibility,
+      showRvr: mainUi.showRvr,
+      tempDewpoint: mainUi.tempDewpoint,
+      showMetarAge: mainUi.showMetarAge,
+      extraInfoInline: mainUi.extraInfoInline,
     };
   });
 
@@ -171,6 +207,126 @@ function App() {
     }
   });
 
+  // Create shortcuts for cloud layer toggles
+  createShortcut(
+    [CtrlOrCmd, "1"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showFew", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+  createShortcut(
+    [CtrlOrCmd, "2"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showSct", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+  createShortcut(
+    [CtrlOrCmd, "3"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showBkn", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+  createShortcut(
+    [CtrlOrCmd, "4"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showOvc", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+  createShortcut(
+    [CtrlOrCmd, "5"],
+    async () =>
+      await applyFnAndResize(() => {
+        const allOn = mainUi.showFew && mainUi.showSct && mainUi.showBkn && mainUi.showOvc;
+        batch(() => {
+          setMainUi("showFew", !allOn);
+          setMainUi("showSct", !allOn);
+          setMainUi("showBkn", !allOn);
+          setMainUi("showOvc", !allOn);
+        });
+      }),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for cover toggle
+  createShortcut(
+    [CtrlOrCmd, "6"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showCover", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for wxString toggle
+  createShortcut(
+    [CtrlOrCmd, "7"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showWxString", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for fltCat toggle (3 states: off -> dot -> text -> off)
+  createShortcut(
+    [CtrlOrCmd, "8"],
+    async () =>
+      await applyFnAndResize(() => {
+        if (mainUi.fltCatMode === "off") {
+          setMainUi("fltCatMode", "dot");
+        } else if (mainUi.fltCatMode === "dot") {
+          setMainUi("fltCatMode", "text");
+        } else {
+          setMainUi("fltCatMode", "off");
+        }
+      }),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for visibility toggle
+  createShortcut(
+    [CtrlOrCmd, "9"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showVisibility", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for temp/dewpoint toggle (3 states: off -> temp -> tempDewp -> off)
+  createShortcut(
+    [CtrlOrCmd, "T"],
+    async () =>
+      await applyFnAndResize(() => {
+        if (mainUi.tempDewpoint === "off") {
+          setMainUi("tempDewpoint", "temp");
+        } else if (mainUi.tempDewpoint === "temp") {
+          setMainUi("tempDewpoint", "tempDewp");
+        } else {
+          setMainUi("tempDewpoint", "off");
+        }
+      }),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for RVR toggle
+  createShortcut(
+    [CtrlOrCmd, "0"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showRvr", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for METAR age toggle (replaces report time)
+  createShortcut(
+    [CtrlOrCmd, "R"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("showMetarAge", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
+  // Create shortcut for extra info display mode (below vs inline)
+  createShortcut(
+    [CtrlOrCmd, "E"],
+    async () =>
+      await applyFnAndResize(() => setMainUi("extraInfoInline", (prev) => !prev)),
+    { preventDefault: true, requireReset: false }
+  );
+
   async function resetWindowHeight() {
     if (containerRef !== undefined) {
       let currentSize = await window.innerSize();
@@ -192,24 +348,31 @@ function App() {
   }
 
   async function loadProfile(p: Profile) {
-    if (p.window === null) {
-      await applyFnAndResize(() => {
-        batch(() => {
-          setIds(p.stations);
-          setMainUi("showInput", p.showInput);
-          setMainUi("showTitlebar", p.showTitlebar);
-          setMainUi("units", p.units);
-          setMainUi("hideAirportIfMissingAtis", p.hideAirportIfMissingAtis);
-        });
-      });
-    } else {
+    const applyProfileToStore = () => {
       batch(() => {
         setIds(p.stations);
         setMainUi("showInput", p.showInput);
         setMainUi("showTitlebar", p.showTitlebar);
         setMainUi("units", p.units);
         setMainUi("hideAirportIfMissingAtis", p.hideAirportIfMissingAtis);
+        setMainUi("showFew", p.showFew ?? false);
+        setMainUi("showSct", p.showSct ?? false);
+        setMainUi("showBkn", p.showBkn ?? false);
+        setMainUi("showOvc", p.showOvc ?? false);
+        setMainUi("showCover", p.showCover ?? false);
+        setMainUi("showWxString", p.showWxString ?? false);
+        setMainUi("fltCatMode", p.fltCatMode ?? "off");
+        setMainUi("showVisibility", p.showVisibility ?? false);
+        setMainUi("showRvr", p.showRvr ?? false);
+        setMainUi("tempDewpoint", p.tempDewpoint ?? "off");
+        setMainUi("showMetarAge", p.showMetarAge ?? false);
+        setMainUi("extraInfoInline", p.extraInfoInline ?? false);
       });
+    };
+    if (p.window === null) {
+      await applyFnAndResize(applyProfileToStore);
+    } else {
+      applyProfileToStore();
     }
   }
 
