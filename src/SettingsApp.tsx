@@ -4,33 +4,12 @@ import { onMount } from "solid-js";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Settings, saveSettingsCmd } from "./tauri.ts";
+import { SettingsMainUiState, DEFAULT_SETTINGS } from "./shared-types.ts";
 
-interface MainUiState {
-  units: "inHg" | "hPa";
-  showFew: boolean;
-  showSct: boolean;
-  showBkn: boolean;
-  showOvc: boolean;
-  showCover: boolean;
-  showWxString: boolean;
-  fltCatMode: "off" | "dot" | "text";
-  showVisibility: boolean;
-  showRvr: boolean;
-  tempDewpoint: "off" | "temp" | "tempDewp";
-  showMetarAge: boolean;
-  extraInfoInline: boolean;
-}
+type MainUiState = SettingsMainUiState;
 
 function SettingsApp() {
-  const [settings, setSettings] = createStore<Settings>({
-    loadMostRecentProfileOnOpen: true,
-    alwaysOnTop: true,
-    autoResize: true,
-    qnhHighlightDuration: 10,
-    showQnhTrendArrow: true,
-    metarYellowMinutes: 90,
-    metarRedMinutes: 150,
-  });
+  const [settings, setSettings] = createStore<Settings>({ ...DEFAULT_SETTINGS });
 
   const [mainUi, setMainUi] = createStore<MainUiState>({
     units: "inHg",

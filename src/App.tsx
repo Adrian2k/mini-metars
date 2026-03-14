@@ -20,6 +20,7 @@ import {
   saveSettingsCmd,
   Settings,
 } from "./tauri.ts";
+import { MainUiStore, DEFAULT_MAIN_UI, DEFAULT_SETTINGS } from "./shared-types.ts";
 import { type } from "@tauri-apps/plugin-os";
 import { CustomTitlebar } from "./CustomTitlebar.tsx";
 import { warn } from "@tauri-apps/plugin-log";
@@ -28,25 +29,7 @@ function removeIndex<T>(array: readonly T[], index: number): T[] {
   return [...array.slice(0, index), ...array.slice(index + 1)];
 }
 
-export interface MainUiStore {
-  showScroll: boolean;
-  showInput: boolean;
-  showTitlebar: boolean;
-  units: "inHg" | "hPa";
-  hideAirportIfMissingAtis: boolean;
-  showFew: boolean;
-  showSct: boolean;
-  showBkn: boolean;
-  showOvc: boolean;
-  showCover: boolean;
-  showWxString: boolean;
-  fltCatMode: "off" | "dot" | "text";
-  showVisibility: boolean;
-  showRvr: boolean;
-  tempDewpoint: "off" | "temp" | "tempDewp";
-  showMetarAge: boolean;
-  extraInfoInline: boolean;
-}
+export type { MainUiStore } from "./shared-types.ts";
 
 function App() {
   // Window basics
@@ -94,36 +77,10 @@ function App() {
   // Main signals for IDs and input
   const [inputId, setInputId] = createSignal("");
   const [ids, setIds] = createStore<string[]>([]);
-  const [mainUi, setMainUi] = createStore<MainUiStore>({
-    showScroll: true,
-    showInput: true,
-    showTitlebar: true,
-    units: "inHg",
-    hideAirportIfMissingAtis: false,
-    showFew: false,
-    showSct: false,
-    showBkn: false,
-    showOvc: false,
-    showCover: false,
-    showWxString: false,
-    fltCatMode: "off",
-    showVisibility: false,
-    showRvr: false,
-    tempDewpoint: "off",
-    showMetarAge: false,
-    extraInfoInline: false,
-  });
+  const [mainUi, setMainUi] = createStore<MainUiStore>({ ...DEFAULT_MAIN_UI });
 
   // Settings store
-  const [settings, setSettings] = createStore<Settings>({
-    loadMostRecentProfileOnOpen: true,
-    alwaysOnTop: true,
-    autoResize: true,
-    qnhHighlightDuration: 10,
-    showQnhTrendArrow: true,
-    metarYellowMinutes: 90,
-    metarRedMinutes: 150,
-  });
+  const [settings, setSettings] = createStore<Settings>({ ...DEFAULT_SETTINGS });
 
   // Settings window reference
   let settingsWindow: WebviewWindow | null = null;
