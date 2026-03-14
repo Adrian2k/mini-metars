@@ -78,6 +78,11 @@ after the wind when inline mode is enabled). All of these are **off by default**
 * `Ctrl/Cmd` + `E`: toggle extra info display mode — switch between a **cyan line below** the main row (default) and
   **white inline** text appended after the wind data
 
+### Settings
+
+* `Ctrl/Cmd` + `G`: open settings window (configures QNH highlight duration, trend arrow, METAR staleness thresholds,
+  and all data toggles listed above)
+
 ### QNH trend indicator
 
 When the altimeter/QNH value changes between METAR updates, a **↑** or **↓** arrow is displayed next to the altimeter

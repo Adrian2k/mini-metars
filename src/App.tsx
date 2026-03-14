@@ -1,11 +1,12 @@
 import "./styles.css";
 import { Metar } from "./Metar.tsx";
-import { SettingsPanel } from "./SettingsPanel.tsx";
 import { batch, createMemo, createSignal, For, onMount, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 // @ts-ignore
 import { autofocus } from "@solid-primitives/autofocus";
 import { cursorPosition, getCurrentWindow, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { emit, listen } from "@tauri-apps/api/event";
 import { logIfDev } from "./logging.ts";
 import { clsx } from "clsx";
 import { createShortcut, KbdKey } from "@solid-primitives/keyboard";
@@ -124,8 +125,8 @@ function App() {
     metarRedMinutes: 150,
   });
 
-  // Settings panel visibility
-  const [showSettings, setShowSettings] = createSignal(false);
+  // Settings window reference
+  let settingsWindow: WebviewWindow | null = null;
 
   let CtrlOrCmd: KbdKey = type() === "macos" || type() === "ios" ? "Meta" : "Control";
 
@@ -367,13 +368,85 @@ function App() {
     { preventDefault: true, requireReset: false }
   );
 
-  // Create shortcut for settings panel
+  // Create shortcut for settings window
   createShortcut(
-    [CtrlOrCmd, ","],
-    async () =>
-      await applyFnAndResize(() => setShowSettings((prev) => !prev)),
+    [CtrlOrCmd, "G"],
+    async () => {
+      await openSettingsWindow();
+    },
     { preventDefault: true, requireReset: false }
   );
+
+  async function openSettingsWindow() {
+    // If already open, focus it
+    if (settingsWindow) {
+      try {
+        await settingsWindow.setFocus();
+        return;
+      } catch (_) {
+        settingsWindow = null;
+      }
+    }
+
+    const devUrl = import.meta.env.DEV ? "http://localhost:1420/settings.html" : "settings.html";
+    settingsWindow = new WebviewWindow("settings", {
+      url: devUrl,
+      title: "Mini METARs - Settings",
+      width: 360,
+      height: 520,
+      resizable: true,
+      center: true,
+    });
+
+    settingsWindow.once("tauri://error", () => {
+      settingsWindow = null;
+    });
+
+    settingsWindow.once("tauri://destroyed", () => {
+      settingsWindow = null;
+    });
+  }
+
+  // Listen for settings window requesting initial state
+  listen("settings-request-init", () => {
+    emit("settings-init", {
+      settings: { ...settings },
+      mainUi: {
+        units: mainUi.units,
+        showFew: mainUi.showFew,
+        showSct: mainUi.showSct,
+        showBkn: mainUi.showBkn,
+        showOvc: mainUi.showOvc,
+        showCover: mainUi.showCover,
+        showWxString: mainUi.showWxString,
+        fltCatMode: mainUi.fltCatMode,
+        showVisibility: mainUi.showVisibility,
+        showRvr: mainUi.showRvr,
+        tempDewpoint: mainUi.tempDewpoint,
+        showMetarAge: mainUi.showMetarAge,
+        extraInfoInline: mainUi.extraInfoInline,
+      },
+    });
+  });
+
+  // Listen for mainUi changes from settings window
+  listen<{ key: string; value: unknown }>("settings-mainui-change", async (event) => {
+    const { key, value } = event.payload;
+    await applyFnAndResize(() => {
+      setMainUi(key as keyof MainUiStore, value as never);
+    });
+  });
+
+  // Listen for settings changes from settings window
+  listen<{ key: string; value: unknown }>("settings-settings-change", (event) => {
+    const { key, value } = event.payload;
+    setSettings(key as keyof Settings, value as never);
+  });
+
+  // Listen for settings window closed — save settings
+  listen("settings-closed", async () => {
+    await saveSettingsCmd(settings);
+  });
 
   async function resetWindowHeight() {
     if (containerRef !== undefined) {
@@ -496,18 +569,6 @@ function App() {
               </form>
             </Show>
           </div>
-          <Show when={showSettings()}>
-            <SettingsPanel
-              settings={settings}
-              setSettings={setSettings}
-              mainUi={mainUi}
-              setMainUi={setMainUi}
-              onClose={async () => {
-                await applyFnAndResize(() => setShowSettings(false));
-                await saveSettingsCmd(settings);
-              }}
-            />
-          </Show>
         </div>
       </div>
     </div>
